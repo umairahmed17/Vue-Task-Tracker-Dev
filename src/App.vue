@@ -32,39 +32,63 @@ export default {
     };
   },
   methods: {
-    addTask(task) {
+    async addTask(task) {
       console.log(task);
-      this.tasks = [...this.tasks, task];
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: JSON.stringify(task),
+      });
+      const data = await res.json();
+      this.tasks = [...this.tasks, data];
     },
     toggleAddTask() {
       this.showAddTask = !this.showAddTask;
     },
-    deleteTask(id) {
+    async deleteTask(id) {
       if (confirm("Are you sure?")) {
-        this.tasks = this.tasks.filter((task) => task.id !== id);
+        const res = await fetch("/api/tasks/" + id, {
+          method: "DELETE",
+        });
+        res.status === 200
+          ? (this.tasks = this.tasks.filter((task) => task.id !== id))
+          : alert("Deleting Tasks");
       }
     },
-    toggleReminder(id) {
+    async toggleReminder(id) {
+      const taskToToggle = await this.fetchTask(id);
+      const updatedTask = { ...taskToToggle, reminder: !taskToToggle.reminder };
+      const res = await fetch("/api/tasks/" + id, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: JSON.stringify(updatedTask),
+      });
+      console.log(res);
       this.tasks = this.tasks.map((task) =>
         task.id === id ? { ...task, reminder: !task.reminder } : task
       );
     },
+    async fetchTasks() {
+      const res = await fetch("/api/tasks");
+      const data = await res.json();
+      data.forEach((element) => {
+        this.tasks = [...this.tasks, element];
+      });
+    },
+    async fetchTask(id) {
+      const res = await fetch("/api/tasks/" + id);
+      const data = await res.json();
+      return data;
+    },
   },
   created() {
-    this.tasks = [
-      {
-        id: 1,
-        text: "Doctor ",
-        day: "March 1st at 2:30pm",
-        reminder: true,
-      },
-      {
-        id: 2,
-        text: "Doctor Appointment",
-        day: "March 3rd at 2:30pm",
-        reminder: false,
-      },
-    ];
+    this.fetchTasks();
   },
 };
 </script>
